@@ -1,0 +1,49 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Tree Height: 500
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Enabled: true
+      Name: Grid
+      Cell Size: 1
+      Plane Cell Count: 10
+    - Class: rviz_default_plugins/RobotModel
+      Enabled: true
+      Name: RobotModel
+      Description Source: Topic
+      Description Topic:
+        Value: /robot_description
+        Durability Policy: Transient Local
+      TF Prefix: ""
+    - Class: rviz_default_plugins/TF
+      Enabled: false
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+    - Class: rviz_default_plugins/LaserScan
+      Enabled: true
+      Name: LaserScan
+      Topic:
+        Value: /scan
+        Durability Policy: Volatile
+      Color: 255; 0; 0
+      Size (m): 0.03
+  Global Options:
+    Fixed Frame: base_footprint
+    Frame Rate: 30
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 1.8
+      Name: Current View
+      Pitch: 0.35
+      Yaw: 0.0
+    Saved: ~

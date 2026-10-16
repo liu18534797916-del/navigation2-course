@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<robot name="scout" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:arg name="robot_name" default="scout"/>
+    <xacro:arg name="robot_namespace" default="$(arg robot_name)"/>
+    <!-- Включать ли плагины управления Gazebo (нужны только для симуляции) -->
+    <xacro:arg name="use_gazebo" default="false"/>
+
+    <!-- Компоненты -->
+    <xacro:include filename="$(find scout_description)/urdf/components/base/base.urdf.xacro" />
+    <xacro:include filename="$(find scout_description)/urdf/components/wheels/wheel.urdf.xacro" />
+    <xacro:include filename="$(find scout_description)/urdf/components/sensors/lidar.urdf.xacro" />
+    <xacro:include filename="$(find scout_description)/urdf/components/plugins/gz_control.urdf.xacro" />
+    <xacro:include filename="$(find scout_description)/urdf/components/plugins/control.urdf.xacro" />
+    <xacro:include filename="$(find scout_description)/urdf/components/plugins/transmission.urdf.xacro" />
+
+    <!-- Геометрия расположения колёс (официальные значения SCOUT) -->
+    <xacro:property name="wheelbase"             value="0.498"/>
+    <xacro:property name="track"                 value="0.58306"/>
+    <xacro:property name="wheel_vertical_offset" value="-0.0702"/>
+
+    <!-- База -->
+    <xacro:base />
+
+    <!-- 4 колеса (дифференциальный привод), ось Y.
+         Нумерация: перед/зад, лево/право. reflect=1 — правые (зеркальные). -->
+    <xacro:wheel prefix="front_left" parent="base_link" reflect="0">
+        <origin xyz="${wheelbase/2} ${track/2} ${wheel_vertical_offset}" rpy="0 0 0"/>
+    </xacro:wheel>
+    <xacro:wheel prefix="front_right" parent="base_link" reflect="1">
+        <origin xyz="${wheelbase/2} ${-track/2} ${wheel_vertical_offset}" rpy="0 0 0"/>
+    </xacro:wheel>
+    <xacro:wheel prefix="rear_left" parent="base_link" reflect="0">
+        <origin xyz="${-wheelbase/2} ${track/2} ${wheel_vertical_offset}" rpy="0 0 0"/>
+    </xacro:wheel>
+    <xacro:wheel prefix="rear_right" parent="base_link" reflect="1">
+        <origin xyz="${-wheelbase/2} ${-track/2} ${wheel_vertical_offset}" rpy="0 0 0"/>
+    </xacro:wheel>
+
+    <!-- Дальномер сверху в передней части робота -->
+    <xacro:lidar prefix="lidar" parent="base_link" ns="$(arg robot_namespace)">
+        <origin xyz="0.30 0.0 0.15" rpy="0.0 0.0 0.0"/>
+    </xacro:lidar>
+
+    <!-- ros2_control + плагины управления Gazebo (только для симуляции) -->
+    <xacro:if value="$(arg use_gazebo)">
+        <xacro:control>
+            <transmissions>
+                <xacro:transmission joint="front_left_wheel_joint"/>
+                <xacro:transmission joint="front_right_wheel_joint"/>
+                <xacro:transmission joint="rear_left_wheel_joint"/>
+                <xacro:transmission joint="rear_right_wheel_joint"/>
+            </transmissions>
+        </xacro:control>
+        <xacro:gz_control namespace="$(arg robot_namespace)"/>
+    </xacro:if>
+
+</robot>

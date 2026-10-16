@@ -1,0 +1,57 @@
+# Конфигурация ros2_control для SCOUT в Gazebo Harmonic.
+# diff_drive_controller принимает Twist (cmd_vel_unstamped) / TwistStamped (cmd_vel)
+# и публикует одометрию (odom) и TF (odom -> base_footprint).
+# Дифференциальный привод: по 2 колеса с каждой стороны (усредняются).
+# wheel_separation = track = 0.58306, wheel_radius = 0.16459 (официальные SCOUT).
+/scout/controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+/scout/joint_state_broadcaster:
+  ros__parameters:
+    use_local_topics: false
+    frame_id: base_footprint
+
+/scout/diff_drive_controller:
+  ros__parameters:
+    left_wheel_names: ["front_left_wheel_joint", "rear_left_wheel_joint"]
+    right_wheel_names: ["front_right_wheel_joint", "rear_right_wheel_joint"]
+
+    wheel_separation: 0.58306
+    wheel_radius: 0.16459
+    wheel_separation_multiplier: 1.0
+    left_wheel_radius_multiplier: 1.0
+    right_wheel_radius_multiplier: 1.0
+
+    publish_rate: 50.0
+    odom_frame_id: odom
+    base_frame_id: base_footprint
+    enable_odom_tf: true
+    open_loop: false
+    position_feedback: true
+
+    pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
+    twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
+
+    cmd_vel_timeout: 0.5
+    reference_timeout: 0.5
+
+    linear.x.has_velocity_limits: true
+    linear.x.has_acceleration_limits: true
+    linear.x.max_velocity: 1.0
+    linear.x.min_velocity: -1.0
+    linear.x.max_acceleration: 2.0
+    linear.x.min_acceleration: -2.0
+
+    angular.z.has_velocity_limits: true
+    angular.z.has_acceleration_limits: true
+    angular.z.max_velocity: 2.0
+    angular.z.min_velocity: -2.0
+    angular.z.max_acceleration: 4.0
+    angular.z.min_acceleration: -4.0

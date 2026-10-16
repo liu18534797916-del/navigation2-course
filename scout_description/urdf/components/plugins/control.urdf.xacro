@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <!-- Аппаратный интерфейс ros2_control для симуляции в Gazebo Harmonic.
+         Плагин gz_ros2_control/GazeboSimSystem создаёт менеджер ресурсов и
+         менеджер контроллеров внутри симулятора. Конкретные моторы (суставы)
+         передаются блоком transmissions. -->
+    <xacro:macro name="control" params="**transmissions">
+        <ros2_control name="GazeboSimSystem" type="system">
+            <hardware>
+                <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+            </hardware>
+            <xacro:insert_block name="transmissions"/>
+        </ros2_control>
+    </xacro:macro>
+
+</robot>

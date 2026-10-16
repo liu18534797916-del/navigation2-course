@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <!-- Плагин gz_ros2_control: создаёт менеджер ресурсов и менеджер
+         контроллеров внутри Gazebo Harmonic. Конфигурация контроллеров
+         берётся из scout_control/config/controllers.yaml. Одометрия и TF
+         (odom -> base_footprint) публикуются diff_drive_controller,
+         поэтому выполняется ремаппинг в пространство имён робота. -->
+    <xacro:macro name="gz_control" params="namespace">
+
+        <gazebo>
+            <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+                <parameters>$(find scout_control)/config/controllers.yaml</parameters>
+
+                <ros>
+                    <namespace>${namespace}</namespace>
+                    <!-- diff_drive_controller в Jazzy публикует TF в глобальный /tf
+                         и добавляет префикс пространства имён к именам систем
+                         координат (scout/odom, scout/base_footprint). Поэтому
+                         robot_state_publisher запускается с frame_prefix=scout/,
+                         а одометрия переименовывается в /scout/odom. -->
+                    <remapping>diff_drive_controller/odom:=odom</remapping>
+                </ros>
+            </plugin>
+        </gazebo>
+
+    </xacro:macro>
+
+</robot>

@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <!-- Габариты шасси SCOUT — официальные значения
+         (agilexrobotics/ugv_gazebo_sim, scout_description, лицензия BSD).
+         Визуальная модель: meshes/base_link.dae (официальная). -->
+    <xacro:property name="base_x_size" value="0.925"/>
+    <xacro:property name="base_y_size" value="0.38"/>
+    <xacro:property name="base_z_size" value="0.21"/>
+    <xacro:property name="base_mass"   value="40.0"/>
+
+    <xacro:property name="wheel_radius"          value="0.16459"/>
+    <xacro:property name="wheel_vertical_offset" value="-0.0702"/>
+    <!-- Высота base_link над полом: колёса касаются земли
+         (wheel_radius - wheel_vertical_offset) -->
+    <xacro:property name="base_z" value="${wheel_radius - wheel_vertical_offset}"/>
+
+    <xacro:macro name="base">
+
+        <!-- Корневое соединение (проекция центра робота на пол) -->
+        <link name="base_footprint"/>
+
+        <!-- Шасси робота -->
+        <link name="base_link">
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="file://$(find scout_description)/meshes/base_link.dae"/>
+                </geometry>
+            </visual>
+            <collision>
+                <origin xyz="0 0 0.008" rpy="0 0 0"/>
+                <geometry>
+                    <box size="${base_x_size} ${base_y_size} ${base_z_size}"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <mass value="${base_mass}"/>
+                <inertia ixx="2.288641" ixy="0" ixz="0"
+                         iyy="5.103976" iyz="0"
+                         izz="3.431465"/>
+            </inertial>
+        </link>
+
+        <!-- Жёсткое соединение footprint -> base_link -->
+        <joint name="base_link_joint" type="fixed">
+            <origin xyz="0 0 ${base_z}" rpy="0 0 0"/>
+            <parent link="base_footprint"/>
+            <child link="base_link"/>
+        </joint>
+
+    </xacro:macro>
+</robot>

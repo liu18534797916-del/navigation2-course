@@ -1,0 +1,14 @@
+# Мост Gazebo -> ROS: только датчик и часы.
+# Одометрия и TF (odom -> base_footprint) публикуются ros2_control напрямую,
+# поэтому мост для /tf и командных топиков не нужен.
+- ros_topic_name: "<robot_namespace>/scan"
+  gz_topic_name: "<robot_namespace>/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS
