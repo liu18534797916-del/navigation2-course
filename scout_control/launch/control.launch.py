@@ -19,6 +19,8 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['--controller-manager-timeout', '100',
+                   '--controller-ros-args', ['-r /tf:=/', namespace, '/tf'],
+                   '--controller-ros-args', ['-r /tf_static:=/', namespace, '/tf_static'],
                    '-c', [namespace, '/controller_manager'],
                    'joint_state_broadcaster'],
         output='screen')
@@ -27,6 +29,8 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['--controller-manager-timeout', '100',
+                   '--controller-ros-args', ['-r /tf:=/', namespace, '/tf'],
+                   '--controller-ros-args', ['-r /tf_static:=/', namespace, '/tf_static'],
                    '-c', [namespace, '/controller_manager'],
                    'diff_drive_controller'],
         output='screen')

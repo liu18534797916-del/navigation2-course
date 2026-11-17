@@ -16,7 +16,6 @@
 /scout/joint_state_broadcaster:
   ros__parameters:
     use_local_topics: false
-    frame_id: base_footprint
 
 /scout/diff_drive_controller:
   ros__parameters:
@@ -32,6 +31,9 @@
     publish_rate: 50.0
     odom_frame_id: odom
     base_frame_id: base_footprint
+    # Не добавлять пространство имён к именам кадров:
+    # пространство имён только в топиках (/scout/tf); кадры: odom, base_footprint
+    tf_frame_prefix_enable: false
     enable_odom_tf: true
     open_loop: false
     position_feedback: true

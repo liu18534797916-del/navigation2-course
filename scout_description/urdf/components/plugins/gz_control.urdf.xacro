@@ -14,12 +14,13 @@
 
                 <ros>
                     <namespace>${namespace}</namespace>
-                    <!-- diff_drive_controller в Jazzy публикует TF в глобальный /tf
-                         и добавляет префикс пространства имён к именам систем
-                         координат (scout/odom, scout/base_footprint). Поэтому
-                         robot_state_publisher запускается с frame_prefix=scout/,
-                         а одометрия переименовывается в /scout/odom. -->
+                    <!-- Имена систем координат используются без префиксов
+                         (odom, base_footprint, ...); пространство имён задаётся
+                         только в именах топиков: /scout/tf, /scout/tf_static,
+                         /scout/odom — см. ремаппинги ниже. -->
                     <remapping>diff_drive_controller/odom:=odom</remapping>
+                    <remapping>tf:=/${namespace}/tf</remapping>
+                    <remapping>tf_static:=/${namespace}/tf_static</remapping>
                 </ros>
             </plugin>
         </gazebo>

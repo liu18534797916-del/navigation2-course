@@ -34,13 +34,14 @@ def generate_launch_description():
         name='robot_state_publisher',
         output='screen',
         namespace=namespace,
+        remappings=[('/tf', ['/', namespace, '/tf']),
+                    ('/tf_static', ['/', namespace, '/tf_static'])],
         parameters=[
             {'robot_description': ParameterValue(
                 Command(['xacro ', robot_xacro_path,
                          ' robot_namespace:=', namespace,
                          ' use_gazebo:=', use_gazebo]),
                 value_type=str)},
-            {'frame_prefix': [namespace, '/']},
             {'use_sim_time': use_sim_time}]
     )
 
