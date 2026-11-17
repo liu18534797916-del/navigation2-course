@@ -27,9 +27,9 @@ def generate_launch_description():
     declare_robot_name_cmd = DeclareLaunchArgument(
         name='robot_name', default_value=namespace, description='Robot name in Gazebo')
     declare_x_cmd = DeclareLaunchArgument(
-        name='x', default_value='0.0', description='Robot position (x)')
+        name='x', default_value='1.0', description='Robot position (x)')
     declare_y_cmd = DeclareLaunchArgument(
-        name='y', default_value='0.0', description='Robot position (y)')
+        name='y', default_value='1.0', description='Robot position (y)')
     declare_z_rot_cmd = DeclareLaunchArgument(
         name='z_rot', default_value='0.0', description='Robot orientation (yaw)')
     declare_bridge_file_path_cmd = DeclareLaunchArgument(

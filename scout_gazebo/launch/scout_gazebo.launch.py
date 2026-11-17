@@ -29,9 +29,9 @@ def generate_launch_description():
     declare_robot_name_cmd = DeclareLaunchArgument(
         name='robot_name', default_value=namespace, description='Robot name')
     declare_x_cmd = DeclareLaunchArgument(
-        name='x', default_value='0.0', description='Robot X axis')
+        name='x', default_value='1.0', description='Robot X axis')
     declare_y_cmd = DeclareLaunchArgument(
-        name='y', default_value='0.0', description='Robot Y axis')
+        name='y', default_value='1.0', description='Robot Y axis')
     declare_z_rot_cmd = DeclareLaunchArgument(
         name='z_rot', default_value='0.0', description='Robot Z rotation (yaw)')
 
