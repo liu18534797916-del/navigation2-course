@@ -24,13 +24,19 @@ def generate_launch_description():
             get_package_share_directory('scout_navigation'), 'config', 'navigation.yaml'),
         description='Navigation parameters yaml')
 
+    # HW3: собственное дерево поведения
+    bt_xml = os.path.join(
+        get_package_share_directory('scout_navigation'),
+        'behavior_tree', 'scout_hw3_behavior_tree.xml')
+
     # Сначала подставляем <robot_namespace> -> /scout, затем корневой ключ ns
     remapped_params = ReplaceString(
         source_file=params_file,
         replacements={'<robot_namespace>': ('/', namespace)})
     configured_params = ParameterFile(
         RewrittenYaml(source_file=remapped_params, root_key=namespace,
-                      param_rewrites={}, convert_types=True),
+                      param_rewrites={'default_nav_to_pose_bt_xml': bt_xml},
+                      convert_types=True),
         allow_substs=True)
 
     remappings = [('/tf', 'tf'), ('/tf_static', 'tf_static')]
@@ -56,6 +62,11 @@ def generate_launch_description():
         output='screen', namespace=namespace, parameters=[configured_params],
         remappings=cmd_remappings)
 
+    smoother_cmd = Node(
+        package='nav2_smoother', executable='smoother_server', name='smoother_server',
+        output='screen', namespace=namespace, parameters=[configured_params],
+        remappings=remappings)
+
     lifecycle_manager_cmd = Node(
         package='nav2_lifecycle_manager', executable='lifecycle_manager',
         name='lifecycle_manager_navigation', output='screen', namespace=namespace,
@@ -68,5 +79,6 @@ def generate_launch_description():
     ld.add_action(planner_cmd)
     ld.add_action(controller_cmd)
     ld.add_action(behavior_cmd)
+    ld.add_action(smoother_cmd)
     ld.add_action(lifecycle_manager_cmd)
     return ld

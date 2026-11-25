@@ -1,0 +1,121 @@
+<!--
+  HW3 - SCOUT custom behavior tree.
+
+  Corresponds to the "Scout" behavior description of the HW3 table:
+   1. navigation from the initial point to the target
+   2. global path is rebuilt more often when the robot speed grows
+      (1.0 Hz at 0.0 m/s ... 5.0 Hz at the maximum speed)      -> SpeedController
+   3. after the global path is built it is checked for validity -> IsPathValid
+      and for the planning time budget      -> ComputePathToPose server_timeout
+      (Nav2 counts TimeExpired from the moment the tree is created and does not
+       reset it on halt, so it is used as a total navigation deadline,
+       not as a per-planning one)           -> TimeExpired
+   4. if the path is invalid or the time expired: clear the global costmap and
+      rebuild the global path during 2 attempts                 -> RecoveryNode + ClearEntireCostmap
+   5. on success the path is smoothed                           -> SmoothPath
+      and then the local path is followed                       -> FollowPath (MPPI)
+   6. on local planning error the second local planner is used  -> Fallback + FollowPath (DWB)
+   7. recovery: clear costmaps, wait 1 s, drive 0.2 m backwards -> ClearEntireCostmap + Wait + BackUp
+   8. if the robot is farther than 1 m from the target, repeat the navigation
+      during 2 attempts, otherwise stop                          -> ArePosesNear
+-->
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
+
+  <BehaviorTree ID="MainTree">
+    <Sequence name="ScoutNavigation">
+
+      <GetCurrentPose name="GetCurrentPose"
+                      global_frame="map"
+                      current_pose="{current_pose}"/>
+
+      <!-- (8) 2 attempts of the whole navigation, aborted when the goal is closer than 1 m -->
+      <RecoveryNode number_of_retries="2" name="NavigateWithRecovery">
+
+        <PipelineSequence name="NavigatePipeline">
+
+          <!-- (2) replanning frequency 1.0 Hz ... 5.0 Hz, depending on the robot speed -->
+          <SpeedController name="ReplanRateOnSpeed"
+                           min_rate="1.0" max_rate="5.0"
+                           min_speed="0.0" max_speed="1.0">
+
+            <!-- (4) 2 attempts of the global path, global costmap is cleared between them -->
+            <RecoveryNode number_of_retries="2" name="GlobalPathWithRetries">
+
+              <Sequence name="GlobalPathBuildAndCheck">
+                <!-- (3) timeout of the path building: the action fails if the
+                     planner does not answer within server_timeout seconds -->
+                <ComputePathToPose name="ComputePathToPose"
+                                   goal="{goal}" path="{global_path}"
+                                   planner_id="GridBased"
+                                   server_timeout="3"/>
+
+                <!-- (3) is the built path valid -->
+                <IsPathValid name="IsPathValid"
+                             path="{global_path}"
+                             server_timeout="5"/>
+
+
+                <!-- (5) smoothing of the global path -->
+                <SmoothPath name="SmoothPath"
+                            smoother_id="default"
+                            unsmoothed_path="{global_path}"
+                            smoothed_path="{smoothed_path}"
+                            max_smoothing_duration="3.0"
+                            check_for_collisions="false"/>
+              </Sequence>
+
+              <ClearEntireCostmap name="ClearGlobalCostmap_AfterPathFailure"
+                                  service_name="global_costmap/clear_entirely_global_costmap"/>
+            </RecoveryNode>
+          </SpeedController>
+
+          <!-- (5)(6) local path: MPPI, on failure the second local planner (DWB) -->
+          <Fallback name="LocalPlannerSwitch">
+            <FollowPath name="FollowPath_MPPI"
+                        path="{smoothed_path}"
+                        controller_id="MPPI"
+                        goal_checker_id="goal_checker"
+                        progress_checker_id="progress_checker"/>
+
+            <FollowPath name="FollowPath_DWB"
+                        path="{smoothed_path}"
+                        controller_id="DWB"
+                        goal_checker_id="goal_checker"
+                        progress_checker_id="progress_checker"/>
+          </Fallback>
+        </PipelineSequence>
+
+        <!-- (7) recovery behavior + (8) distance to the target check -->
+        <Sequence name="RecoveryBehavior">
+          <!-- (3') общий лимит времени навигации: если он истёк, восстановление
+               завершается неудачей и навигация прекращается -->
+          <Inverter name="NavigationDeadlineNotExceeded">
+            <TimeExpired name="NavigationTimeExpired" seconds="60.0"/>
+          </Inverter>
+
+          <ClearEntireCostmap name="ClearGlobalCostmap_Recovery"
+                              service_name="global_costmap/clear_entirely_global_costmap"/>
+          <ClearEntireCostmap name="ClearLocalCostmap_Recovery"
+                              service_name="local_costmap/clear_entirely_local_costmap"/>
+
+          <Wait name="Wait1s" wait_duration="1"/>
+          <BackUp name="BackUp02m"
+                  backup_dist="0.2"
+                  backup_speed="0.15"
+                  time_allowance="10"/>
+
+          <!-- farther than 1 m -> continue with another attempt, otherwise stop -->
+          <Inverter name="StillFarFromGoal">
+            <ArePosesNear name="GoalCloserThan1m"
+                          ref_pose="{current_pose}"
+                          target_pose="{goal}"
+                          tolerance="1.0"
+                          global_frame="map"/>
+          </Inverter>
+        </Sequence>
+
+      </RecoveryNode>
+    </Sequence>
+  </BehaviorTree>
+
+</root>
