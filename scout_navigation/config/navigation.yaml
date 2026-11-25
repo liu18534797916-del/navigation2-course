@@ -1,0 +1,256 @@
+# Автономная навигация Nav2 для SCOUT (дифференциальный привод) на известной карте.
+# <robot_namespace> заменяется на /scout через ReplaceString в navigation.launch.py.
+# HW2 (по таблице): Scout -> MPPI Controller + SmacPlanner (глобальный).
+bt_navigator:
+  ros__parameters:
+    use_sim_time: True
+    global_frame: map
+    robot_base_frame: base_footprint
+    odom_topic: <robot_namespace>/odom
+    transform_tolerance: 0.1
+    bt_loop_duration: 10
+    default_server_timeout: 20
+    wait_for_service_timeout: 1000
+    action_server_result_timeout: 900.0
+    navigators: ["navigate_to_pose"]
+    navigate_to_pose:
+      plugin: nav2_bt_navigator::NavigateToPoseNavigator
+
+planner_server:
+  ros__parameters:
+    use_sim_time: True
+    expected_planner_frequency: 20.0
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: nav2_smac_planner::SmacPlanner2D
+      tolerance: 0.5
+      allow_unknown: true
+      downsample_costmap: false
+      motion_model_for_search: "VON"   # 2D: 8-связность
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      cost_travel_multiplier: 2.0
+      lethal_cost_threshold: 253
+
+controller_server:
+  ros__parameters:
+    enable_stamped_cmd_vel: true   # TwistStamped -> diff_drive_controller/cmd_vel
+    use_sim_time: True
+    controller_frequency: 20.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.5
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.3
+    odom_topic: <robot_namespace>/odom
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["goal_checker"]
+    controller_plugins: ["FollowPath"]
+    use_realtime_priority: false
+    progress_checker:
+      plugin: nav2_controller::SimpleProgressChecker
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+      stateful: True
+    FollowPath:
+      plugin: "nav2_mppi_controller::MPPIController"
+      time_steps: 56
+      model_dt: 0.05
+      batch_size: 2000
+      vx_std: 0.2
+      vy_std: 0.0
+      wz_std: 0.4
+      vx_max: 1.0
+      vx_min: -0.5
+      vy_max: 0.0
+      wz_max: 2.0
+      ax_max: 2.0
+      ay_max: 0.0
+      az_max: 4.0
+      iteration_count: 1
+      prune_distance: 1.7
+      transform_tolerance: 0.1
+      temperature: 0.3
+      gamma: 0.015
+      motion_model: "DiffDrive"
+      visualize_optimal_trajectory: false
+      TrajectoryVisualizer:
+        trajectory_step: 5
+        time_step: 3
+      critics: ["ConstraintCritic", "CostCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic"]
+      ConstraintCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 4.0
+      GoalCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 1.4
+      GoalAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.0
+        threshold_to_consider: 0.5
+      PreferForwardCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 1.4
+      CostCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.81
+        critical_cost: 300.0
+        consider_footprint: true
+        collision_cost: 1000000.0
+        near_goal_distance: 1.0
+        trajectory_point_step: 2
+      PathAlignCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 14.0
+        max_path_occupancy_ratio: 0.05
+        trajectory_point_step: 4
+        threshold_to_consider: 0.5
+        offset_from_furthest: 20
+        use_path_orientations: false
+      PathFollowCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        offset_from_furthest: 5
+        threshold_to_consider: 1.4
+      PathAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 2.0
+        offset_from_furthest: 4
+        threshold_to_consider: 0.5
+        max_angle_to_furthest: 1.0
+        mode: 0
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: True
+      footprint_padding: 0.01
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: map
+      robot_base_frame: base_footprint
+      # SCOUT 0.925 x 0.38 -> прямоугольный footprint
+      footprint: "[[0.4625, 0.19], [0.4625, -0.19], [-0.4625, -0.19], [-0.4625, 0.19]]"
+      resolution: 0.05
+      track_unknown_space: true
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: nav2_costmap_2d::ObstacleLayer
+        enabled: true
+        observation_sources: scan
+        footprint_clearing_enabled: true
+        combination_method: 1
+        scan:
+          topic: <robot_namespace>/scan
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          max_obstacle_height: 2.0
+          min_obstacle_height: 0.0
+          clearing: True
+          marking: True
+          data_type: LaserScan
+          inf_is_valid: false
+      inflation_layer:
+        plugin: nav2_costmap_2d::InflationLayer
+        enabled: true
+        inflation_radius: 0.5
+        cost_scaling_factor: 1.0
+        inflate_unknown: false
+        inflate_around_unknown: true
+      static_layer:
+        plugin: nav2_costmap_2d::StaticLayer
+        enabled: true
+        map_subscribe_transient_local: true
+        subscribe_to_updates: true
+        transform_tolerance: 0.1
+      always_send_full_costmap: true
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      use_sim_time: True
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: odom
+      robot_base_frame: base_footprint
+      rolling_window: true
+      width: 6
+      height: 6
+      footprint: "[[0.4625, 0.19], [0.4625, -0.19], [-0.4625, -0.19], [-0.4625, 0.19]]"
+      resolution: 0.05
+      plugins: ["obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: nav2_costmap_2d::ObstacleLayer
+        enabled: true
+        observation_sources: scan
+        footprint_clearing_enabled: true
+        combination_method: 1
+        scan:
+          topic: <robot_namespace>/scan
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          max_obstacle_height: 2.0
+          min_obstacle_height: 0.0
+          clearing: true
+          marking: true
+          data_type: LaserScan
+          inf_is_valid: false
+      inflation_layer:
+        plugin: nav2_costmap_2d::InflationLayer
+        enabled: true
+        inflation_radius: 0.5
+        cost_scaling_factor: 1.0
+        inflate_unknown: false
+        inflate_around_unknown: true
+      always_send_full_costmap: true
+
+behavior_server:
+  ros__parameters:
+    enable_stamped_cmd_vel: true
+    use_sim_time: True
+    local_costmap_topic: local_costmap/costmap_raw
+    global_costmap_topic: global_costmap/costmap_raw
+    local_footprint_topic: local_costmap/published_footprint
+    global_footprint_topic: global_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "wait"]
+    spin:
+      plugin: nav2_behaviors::Spin
+    backup:
+      plugin: nav2_behaviors::BackUp
+    wait:
+      plugin: nav2_behaviors::Wait
+    local_frame: odom
+    global_frame: map
+    robot_base_frame: base_footprint
+    transform_tolerance: 0.1
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 2.0
+    min_rotational_vel: 0.4
+    rotational_acc_lim: 4.0
+
+lifecycle_manager_navigation:
+  ros__parameters:
+    use_sim_time: True
+    autostart: true
+    node_names: ['bt_navigator', 'planner_server', 'controller_server', 'behavior_server']
+    bond_timeout: 4.0
+    attempt_respawn_reconnection: true
+    bond_respawn_max_duration: 10.0

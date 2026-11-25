@@ -5,7 +5,7 @@
 
 		<gazebo reference="${prefix}_link">
 			<sensor name='${prefix}' type='gpu_lidar'>
-				<gz_frame_id>${namespace}/${prefix}_link</gz_frame_id>
+				<gz_frame_id>${prefix}_link</gz_frame_id>
 				<topic>${namespace}/scan</topic>
 				<update_rate>10</update_rate>
 				<ray>
